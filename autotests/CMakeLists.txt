@@ -25,3 +25,16 @@ if(CMAKE_SYSTEM_NAME MATCHES "Linux")
     ecm_add_test(localListerTest.cpp TEST_NAME localListerTest LINK_LIBRARIES Qt::Test filelightInternal)
 endif()
 ecm_add_test(scanManagerTest.cpp TEST_NAME scanManagerTest LINK_LIBRARIES Qt::Test filelightInternal)
+
+ecm_add_test(
+    contextMenuContextTest.cpp
+    ../src/contextMenuContext.cpp
+    ../src/contextMenuContext.h
+    ../src/radialMap/map.cpp
+    ../src/radialMap/map.h
+    ../src/radialMap/radialMap.cpp
+    ../src/radialMap/radialMap.h
+    TEST_NAME contextMenuContextTest
+    LINK_LIBRARIES Qt::Test Qt::Quick KF6::ColorScheme filelightInternal
+)
+target_include_directories(contextMenuContextTest PRIVATE ../src/radialMap)

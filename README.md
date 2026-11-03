@@ -1,5 +1,8 @@
 # Filelight
 
+This personal fork adds plain-text clipboard paths while preserving file-manager
+copying. See [the clipboard fix and build instructions](CLIPBOARD_FIX.md).
+
 Filelight allows you to understand exactly where your diskspace is being used by
 graphically representating your filesystem as a set of concentric
 segmented-rings.

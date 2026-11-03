@@ -57,6 +57,7 @@ void ContextMenuContext::copyClipboard(const QUrl &url)
 {
     auto mime = new QMimeData;
     mime->setUrls({url});
+    mime->setText(url.isLocalFile() ? url.toLocalFile() : url.toDisplayString());
     KUrlMimeData::exportUrlsToPortal(mime);
     QGuiApplication::clipboard()->setMimeData(mime, QClipboard::Clipboard);
 }

@@ -171,7 +171,7 @@ Kirigami.Page {
                 action: Kirigami.Action {
                     icon.name: "edit-copy"
                     text: i18nc("@action", "Copy to clipboard")
-                    onTriggered: contextMenuContext.copyClipboard(contextMenu.segment.displayPath())
+                    onTriggered: contextMenuContext.copyClipboard(contextMenu.segment.url())
                 }
             }
             QQC2.MenuSeparator {}
