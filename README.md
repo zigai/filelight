@@ -9,4 +9,4 @@ A fork of [KDE Filelight](https://github.com/KDE/filelight), a graphical disk-us
 - **Sidebar:** tighter rows and a draggable divider that remembers its width. Single-click selects; double-click opens.
 - **Navigation:** mouse Back/Forward and Alt+Left/Right retrace folder visits. Back falls back to the parent when there's no earlier visit; Forward can return. Up / Alt+Up always goes to the parent.
 
-[Original upstream README](README.upstream.md)
+[Original upstream README](README.old.md)
