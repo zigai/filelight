@@ -21,6 +21,21 @@ void FileModel::setTree(const std::shared_ptr<Folder> &tree)
     endResetModel();
 }
 
+void FileModel::removeFiles(const QList<std::shared_ptr<File>> &files)
+{
+    if (files.isEmpty()) {
+        return;
+    }
+    beginResetModel();
+    for (const auto &file : files) {
+        if (file && file->parent()) {
+            file->parent()->remove(file);
+        }
+    }
+    Q_EMIT treeChanged();
+    endResetModel();
+}
+
 QUrl FileModel::url() const
 {
     if (m_tree) {
@@ -40,7 +55,7 @@ int FileModel::rowCount(const QModelIndex &parent) const
 
 QVariant FileModel::data(const QModelIndex &index, int intRole) const
 {
-    if (!index.isValid() || !m_tree) {
+    if (!index.isValid() || !m_tree || index.row() < 0 || index.row() >= static_cast<int>(m_tree->files.size())) {
         return {};
     }
     const auto row = index.row();
@@ -83,7 +98,27 @@ QHash<int, QByteArray> FileModel::roleNames() const
 
 std::shared_ptr<File> FileModel::file(int row) const
 {
+    if (!m_tree || row < 0 || row >= static_cast<int>(m_tree->files.size())) {
+        return {};
+    }
     return m_tree->files.at(row);
+}
+
+bool FileModel::isFolder(int row) const
+{
+    const auto entry = file(row);
+    return entry && entry->isFolder();
+}
+
+QList<QUrl> FileModel::urls(const QList<int> &rows) const
+{
+    QList<QUrl> result;
+    for (const int row : rows) {
+        if (const auto entry = file(row); entry && !result.contains(entry->url())) {
+            result.append(entry->url());
+        }
+    }
+    return result;
 }
 
 FileModel *FileModel::instance()

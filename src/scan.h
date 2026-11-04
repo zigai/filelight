@@ -58,6 +58,12 @@ public:
 
     void invalidateCacheFor(const QUrl &url);
 
+    // Retain owning roots while asynchronous operations act on cached subtrees.
+    [[nodiscard]] QList<std::shared_ptr<Folder>> cachedTrees() const
+    {
+        return m_cache;
+    }
+
 public Q_SLOTS:
     bool abort();
     void emptyCache();

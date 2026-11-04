@@ -38,7 +38,9 @@ public Q_SLOTS:
 
     void copyClipboard(RadialMap::Segment *segment);
     void copyClipboard(const QUrl &url);
+    void copyUrls(const QList<QUrl> &urls);
 
+    void deleteRows(const QList<int> &rows);
     void deleteFileFromSegment(RadialMap::Segment *segment);
     void deleteFile(const std::shared_ptr<File> &file);
 
@@ -49,7 +51,10 @@ Q_SIGNALS:
     void deleteFileFailed(QString reason);
 
 private:
+    void deleteFiles(const QList<std::shared_ptr<File>> &files);
+
     bool m_deleting = false;
+    int m_pendingDeletions = 0;
 };
 
 } // namespace Filelight

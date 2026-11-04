@@ -7,6 +7,7 @@
         <file>main.qml</file>
         <file>OverviewPage.qml</file>
         <file>MapPage.qml</file>
+        <file>SidebarSelection.qml</file>
         <file>Action.qml</file>
         <file>AboutPage.qml</file>
         <file>ActionMenuItem.qml</file>

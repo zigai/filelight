@@ -29,6 +29,7 @@ public:
     std::shared_ptr<Folder> m_tree;
 
     void setTree(const std::shared_ptr<Folder> &tree);
+    void removeFiles(const QList<std::shared_ptr<File>> &files);
 
     [[nodiscard]] QUrl url() const;
 
@@ -46,6 +47,8 @@ public:
     [[nodiscard]] QHash<int, QByteArray> roleNames() const override;
 
     Q_INVOKABLE [[nodiscard]] std::shared_ptr<File> file(int row) const;
+    Q_INVOKABLE [[nodiscard]] QList<QUrl> urls(const QList<int> &rows) const;
+    Q_INVOKABLE [[nodiscard]] bool isFolder(int row) const;
 
 private:
     // Fun fact: Qt's moc fails to deal with the `using` keyword properly.

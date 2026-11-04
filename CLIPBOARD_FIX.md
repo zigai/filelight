@@ -29,7 +29,8 @@ QT_QPA_PLATFORM=offscreen ctest --test-dir build --output-on-failure --timeout 4
 cmake --install build
 ```
 
-Restart Filelight after installing. The workstation config repository manages
+Close Filelight before running `cmake --install`, then reopen it afterward.
+The workstation config repository manages
 `~/.local/bin/filelight` and the desktop launcher override; the binary and
 installation output are not dotfiles. The wrapper selects this installation,
 falling back to `/usr/bin/filelight` when it is absent.
@@ -41,7 +42,8 @@ package.
 
 ## Verification
 
-- All six CTest suites pass, including the new copy-context regression test.
+- All seven CTest suites pass, including the copy-context regression test and
+  the [sidebar multi-selection](MULTI_SELECTION.md) suite.
 - The new regression test fails on all four data rows when the plain-text
   addition is temporarily removed, and passes when restored.
 - Installed binary tested in an isolated KWin Wayland session: right-click

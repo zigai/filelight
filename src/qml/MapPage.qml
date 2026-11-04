@@ -40,9 +40,14 @@ Kirigami.Page {
         contentItem: QQC2.Label {
             id: footerLabel
             verticalAlignment: Text.AlignVCenter
-            text: (RadialMap.numberOfChildren === 0) ?
-            i18nc("@info:status", "No files shown.") :
-            i18ncp("@info:status", "1 file shown", "%1 files shown", RadialMap.numberOfChildren)
+            text: {
+                const shown = RadialMap.numberOfChildren === 0
+                    ? i18nc("@info:status", "No files shown.")
+                    : i18ncp("@info:status", "1 file shown", "%1 files shown", RadialMap.numberOfChildren);
+                return sidebarSelection.rows.length > 0
+                    ? shown + " — " + i18ncp("@info:status", "1 selected", "%1 selected", sidebarSelection.rows.length)
+                    : shown;
+            }
         }
     }
 
@@ -190,6 +195,64 @@ Kirigami.Page {
     property var hoveredSegment: undefined
     property bool hoveringListItem: false
 
+    SidebarSelection {
+        id: sidebarSelection
+        rowCount: listview.count
+    }
+
+    Connections {
+        target: FileModel
+        function onModelReset() {
+            sidebarMenu.close();
+            sidebarSelection.clear();
+        }
+    }
+
+    QQC2.Menu {
+        id: sidebarMenu
+        property var rows: []
+        property var urls: []
+        property bool singleFolder: false
+
+        onAboutToShow: page.contextMenu = this
+        onAboutToHide: page.contextMenu = null
+        onClosed: {
+            if (page.visible && page.enabled) listview.forceActiveFocus();
+        }
+
+        QQC2.MenuItem {
+            icon.name: "document-open"
+            text: i18nc("@action Open selected files or directories", "Open")
+            onTriggered: {
+                for (const url of sidebarMenu.urls) Qt.openUrlExternally(url);
+            }
+        }
+        QQC2.MenuItem {
+            visible: sidebarMenu.singleFolder && sidebarMenu.urls.length === 1
+                     && sidebarMenu.urls[0].toString().startsWith("file:")
+            icon.name: "utilities-terminal"
+            text: i18nc("@action", "Open Terminal Here")
+            onTriggered: contextMenuContext.openTerminal(sidebarMenu.urls[0])
+        }
+        QQC2.MenuItem {
+            visible: sidebarMenu.singleFolder
+            icon.name: "list-remove"
+            text: i18nc("@action", "Add to Do Not Scan List")
+            onTriggered: contextMenuContext.doNotScan(sidebarMenu.urls[0])
+        }
+        QQC2.MenuItem {
+            icon.name: "edit-copy"
+            text: i18nc("@action", "Copy to clipboard")
+            onTriggered: contextMenuContext.copyUrls(sidebarMenu.urls)
+        }
+        QQC2.MenuSeparator {}
+        QQC2.MenuItem {
+            icon.name: "edit-delete"
+            text: i18nc("@action delete selected files or folders", "Delete")
+            onTriggered: contextMenuContext.deleteRows(sidebarMenu.rows)
+        }
+    }
+
     RowLayout {
         anchors.fill: parent
         spacing: 0
@@ -214,92 +277,115 @@ Kirigami.Page {
                 id: listview
                 clip: true
                 model: visible ? FileModel : undefined
-                Component.onCompleted: currentIndex = -1
+                currentIndex: sidebarSelection.current
                 reuseItems: true
                 focus: true
                 activeFocusOnTab: true
-                keyNavigationEnabled: true
-                keyNavigationWraps: true
+                keyNavigationEnabled: false
+
+                Keys.onPressed: event => {
+                    if (event.matches(StandardKey.SelectAll)) {
+                        sidebarSelection.selectAll();
+                    } else if (event.matches(StandardKey.Copy)) {
+                        contextMenuContext.copyUrls(FileModel.urls(sidebarSelection.rows));
+                    } else if (event.key === Qt.Key_Escape) {
+                        sidebarSelection.clear();
+                    } else if (event.key === Qt.Key_Delete) {
+                        contextMenuContext.deleteRows(sidebarSelection.rows);
+                    } else if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
+                        const urls = FileModel.urls(sidebarSelection.rows);
+                        if (urls.length === 1) {
+                            if (FileModel.isFolder(sidebarSelection.rows[0])) {
+                                MainContext.updateURL(urls[0]);
+                                MainContext.openUrl(urls[0]);
+                            } else {
+                                Qt.openUrlExternally(urls[0]);
+                            }
+                        }
+                    } else if (event.key === Qt.Key_Space && sidebarSelection.current >= 0) {
+                        sidebarSelection.select(sidebarSelection.current, event.modifiers | Qt.ControlModifier);
+                    } else if ([Qt.Key_Up, Qt.Key_Down, Qt.Key_Home, Qt.Key_End].indexOf(event.key) !== -1) {
+                        let row = sidebarSelection.current;
+                        if (event.key === Qt.Key_Home) row = 0;
+                        else if (event.key === Qt.Key_End) row = listview.count - 1;
+                        else if (event.key === Qt.Key_Up) row = row < 0 ? listview.count - 1 : row - 1;
+                        else row = row < 0 ? 0 : row + 1;
+                        sidebarSelection.navigate(row, event.modifiers);
+                        listview.positionViewAtIndex(sidebarSelection.current, ListView.Contain);
+                    } else {
+                        event.accepted = false;
+                        return;
+                    }
+                    event.accepted = true;
+                }
+
+                TapHandler {
+                    acceptedButtons: Qt.LeftButton
+                    onTapped: eventPoint => {
+                        if (listview.indexAt(eventPoint.position.x + listview.contentX,
+                                             eventPoint.position.y + listview.contentY) < 0) {
+                            sidebarSelection.clear();
+                            listview.forceActiveFocus();
+                        }
+                    }
+                }
+
                 delegate: KD.SubtitleDelegate {
+                    id: sidebarDelegate
                     width: listview.width
                     icon.name: ROLE_IsFolder ? "folder" : "file" // TODO mimetype?
                     icon.width: Kirigami.Units.iconSizes.huge
                     text: model.display
                     subtitle: ROLE_HumanReadableSize
                     hoverEnabled: !page.contextMenu
-                    highlighted: {
-                        if (page.contextMenu) {
-                            return (listview.currentIndex === index) && hoveringListItem;
+                    highlighted: sidebarSelection.contains(index)
+                    Accessible.selectable: true
+                    Accessible.selected: highlighted
+                    // Keyboard focus is separate from selection (Ctrl+arrows).
+                    focus: listview.currentIndex === index
+                    // Button-like delegates otherwise consume Space/Enter
+                    // before the ListView's selection handlers can see them.
+                    Keys.forwardTo: [listview]
+
+                    function openItem() {
+                        if (ROLE_IsFolder) {
+                            MainContext.updateURL(ROLE_URL);
+                            MainContext.openUrl(ROLE_URL);
                         } else {
-                            if (hoveringListItem) {
-                                return hovered
-                            }
-                            return hoveredSegment === ROLE_Segment
+                            Qt.openUrlExternally(ROLE_URL);
                         }
                     }
+
                     onHoveredChanged: {
                         if (hovered) {
-                            listview.currentIndex = index;
-                            hoveringListItem = true
-                            hoveredSegment = ROLE_Segment
-                        }
-                    }
-                    onClicked: {
-                        if (ROLE_IsFolder) {
-                            MainContext.updateURL(ROLE_URL)
-                            MainContext.openUrl(ROLE_URL)
+                            hoveringListItem = true;
+                            hoveredSegment = ROLE_Segment;
                         }
                     }
 
-                    QQC2.Menu {
-                        id: contextMenu
-
-                        onAboutToShow: page.contextMenu = this
-                        onAboutToHide: page.contextMenu = null
-
-                        QQC2.MenuItem {
-                            action: Kirigami.Action {
-                                icon.name: "document-open"
-                                text: i18nc("@action Open file or directory from context menu", "Open")
-                            }
-                            onTriggered: Qt.openUrlExternally(ROLE_URL)
+                    TapHandler {
+                        acceptedButtons: Qt.LeftButton
+                        onTapped: (eventPoint, button) => {
+                            listview.forceActiveFocus();
+                            sidebarSelection.select(index, point.modifiers);
                         }
-                        QQC2.MenuItem {
-                            visible: ROLE_IsFolder && ROLE_URL.toString().startsWith("file:")
-                            action: Kirigami.Action {
-                                icon.name: "utilities-terminal"
-                                text: i18nc("@action", "Open Terminal Here")
-                                onTriggered: contextMenuContext.openTerminal(ROLE_URL)
-                            }
-                        }
-                        QQC2.MenuItem {
-                            visible: ROLE_IsFolder
-                            action: Kirigami.Action {
-                                icon.name: "list-remove"
-                                text: i18nc("@action", "Add to Do Not Scan List")
-                                onTriggered: contextMenuContext.doNotScan(ROLE_URL)
-                            }
-                        }
-                        QQC2.MenuItem {
-                            action: Kirigami.Action {
-                                icon.name: "edit-copy"
-                                text: i18nc("@action", "Copy to clipboard")
-                                onTriggered: contextMenuContext.copyClipboard(ROLE_URL)
-                            }
-                        }
-                        QQC2.MenuSeparator {}
-                        QQC2.MenuItem {
-                            action: Kirigami.Action {
-                                icon.name: "edit-delete"
-                                text: i18nc("@action delete file or folder", "Delete")
-                                onTriggered: contextMenuContext.deleteFile(FileModel.file(index))
+                        onDoubleTapped: (eventPoint, button) => {
+                            if (!(point.modifiers & (Qt.ControlModifier | Qt.ShiftModifier))) {
+                                sidebarDelegate.openItem();
                             }
                         }
                     }
 
                     TapHandler {
                         acceptedButtons: Qt.RightButton
-                        onTapped: contextMenu.popup()
+                        onTapped: {
+                            listview.forceActiveFocus();
+                            sidebarSelection.contextSelect(index);
+                            sidebarMenu.rows = sidebarSelection.rows.slice();
+                            sidebarMenu.urls = FileModel.urls(sidebarMenu.rows);
+                            sidebarMenu.singleFolder = sidebarMenu.rows.length === 1 && ROLE_IsFolder;
+                            sidebarMenu.popup();
+                        }
                     }
                 }
             }

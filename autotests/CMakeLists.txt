@@ -30,6 +30,8 @@ ecm_add_test(
     contextMenuContextTest.cpp
     ../src/contextMenuContext.cpp
     ../src/contextMenuContext.h
+    ../src/fileModel.cpp
+    ../src/fileModel.h
     ../src/radialMap/map.cpp
     ../src/radialMap/map.h
     ../src/radialMap/radialMap.cpp
@@ -38,3 +40,10 @@ ecm_add_test(
     LINK_LIBRARIES Qt::Test Qt::Quick KF6::ColorScheme filelightInternal
 )
 target_include_directories(contextMenuContextTest PRIVATE ../src/radialMap)
+
+find_package(Qt6QuickTest ${QT_REQUIRED_VERSION} REQUIRED)
+ecm_add_test(sidebarSelectionTest.cpp
+    TEST_NAME sidebarSelectionTest
+    LINK_LIBRARIES Qt::QuickTest
+)
+target_compile_definitions(sidebarSelectionTest PRIVATE QUICK_TEST_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/qml")
