@@ -76,16 +76,62 @@ void MainContext::slotScanRootFolder()
     slotScanPath(QDir::rootPath());
 }
 
-void MainContext::slotUp()
+QUrl MainContext::parentUrl() const
 {
-    const auto downUrl = url();
-    auto upUrl = KIO::upUrl(downUrl);
+    auto parent = KIO::upUrl(url());
 #ifdef Q_OS_WINDOWS
-    if (upUrl.path() == QLatin1Char('/')) { // root means nothing on windows
-        upUrl = downUrl;
+    if (parent.path() == QLatin1Char('/')) { // root means nothing on windows
+        parent = url();
     }
 #endif
-    slotScanUrl(upUrl);
+    return parent;
+}
+
+void MainContext::slotUp()
+{
+    slotScanUrl(parentUrl());
+}
+
+bool MainContext::backEnabled() const
+{
+    return m_history.canGoBack() || m_upEnabled;
+}
+
+bool MainContext::forwardEnabled() const
+{
+    return m_history.canGoForward();
+}
+
+bool MainContext::slotBack()
+{
+    if (!backEnabled() || m_manager->running()) {
+        return false;
+    }
+    const bool previousVisit = m_history.canGoBack();
+    const auto target = previousVisit ? m_history.back() : parentUrl();
+    if (!openUrlImpl(target, false)) {
+        return false;
+    }
+    if (previousVisit) {
+        m_history.goBack();
+    } else {
+        m_history.prependParent(target);
+    }
+    Q_EMIT navigationChanged();
+    return true;
+}
+
+bool MainContext::slotForward()
+{
+    if (!m_history.canGoForward() || m_manager->running()) {
+        return false;
+    }
+    if (!openUrlImpl(m_history.forward(), false)) {
+        return false;
+    }
+    m_history.goForward();
+    Q_EMIT navigationChanged();
+    return true;
 }
 
 bool MainContext::slotScanPath(const QString &path)
@@ -95,15 +141,15 @@ bool MainContext::slotScanPath(const QString &path)
 
 bool MainContext::slotScanUrl(const QUrl &url)
 {
-    const QUrl oldUrl = this->url();
-
-    if (openUrl(url)) {
-        return true;
-    }
-    return false;
+    return openUrl(url);
 }
 
 bool MainContext::openUrl(const QUrl &u)
+{
+    return openUrlImpl(u, true);
+}
+
+bool MainContext::openUrlImpl(const QUrl &u, bool remember)
 {
     // TODO should have an empty QUrl until scan is confirmed successful
     // TODO probably should set caption to QString::null while map is unusable
@@ -125,12 +171,20 @@ bool MainContext::openUrl(const QUrl &u)
     } else {
         const bool success = start(uri);
         if (success) {
+            const bool historyChanged = remember && m_history.record(uri);
             setUrl(uri);
-            setUpEnabled(url() != KIO::upUrl(url()));
+            setUpEnabled(url() != parentUrl());
+            if (historyChanged) {
+                Q_EMIT navigationChanged();
+            }
+            return true;
         }
-        return success;
     }
 
+    // Some chart/sidebar routes call updateURL before validating the target.
+    // A failed visit must not replace the last accepted location or history.
+    setUrl(m_history.current());
+    setUpEnabled(!url().isEmpty() && url() != parentUrl());
     qDebug() << "failed to openurl" << u;
     return false;
 }
@@ -182,6 +236,7 @@ void MainContext::setUpEnabled(const bool enabled)
     if (m_upEnabled != enabled) {
         m_upEnabled = enabled;
         Q_EMIT upEnabledChanged();
+        Q_EMIT navigationChanged();
     }
 }
 

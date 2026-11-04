@@ -14,10 +14,11 @@ local to the chart canvas after moving the divider.
 
 ## Back navigation
 
-On the map, the mouse Back button and the platform Back key/shortcut (including
-Alt+Left) go up one folder, like the existing Up toolbar action / Alt+Up. At the
-filesystem root or while the map is busy, they are consumed without switching to
-Overview. Native popup menus retain their platform dismissal behavior.
+On the map, Back and Forward now retrace [folder history](NAVIGATION_HISTORY.md).
+Back on an initially opened folder still falls back to its parent, and Forward
+can return to it. Up / Alt+Up always means the parent, independent of history.
+Unavailable history actions and input while the map is busy are consumed without
+switching to Overview. Native popup menus retain their platform dismissal behavior.
 
 The original reset-like behavior was Kirigami switching from Map to Overview,
 not discarding the scan. Page-level Back cancellation did not reliably prevent
@@ -30,7 +31,7 @@ No global mouse or desktop key mapping is changed.
 
 ## Verification
 
-- All eight CTest suites pass, including window-level Back key/button tests
+- All nine CTest suites pass, including window-level Back/Forward key/button tests
   (press/release, ShortcutOverride, auto-repeat, disabled mode, unrelated keys,
   and replacing the window).
 - The QML layout tests drag the divider, check minimum sizes and sidebar hiding,

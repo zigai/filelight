@@ -11,6 +11,7 @@
 #include <QUrl>
 
 #include "Config.h"
+#include "navigationHistory.h"
 
 class QLabel;
 class QQmlApplicationEngine;
@@ -35,21 +36,28 @@ class MainContext : public QObject
 public:
     Q_PROPERTY(QUrl url READ url WRITE setUrl NOTIFY urlChanged)
     Q_PROPERTY(bool upEnabled MEMBER m_upEnabled NOTIFY upEnabledChanged)
+    Q_PROPERTY(bool backEnabled READ backEnabled NOTIFY navigationChanged)
+    Q_PROPERTY(bool forwardEnabled READ forwardEnabled NOTIFY navigationChanged)
 
     static MainContext *create(QQmlEngine *qml, QJSEngine *js);
 
     [[nodiscard]] QUrl url() const;
+    [[nodiscard]] bool backEnabled() const;
+    [[nodiscard]] bool forwardEnabled() const;
 
 Q_SIGNALS:
     void canceled(const QString &);
     void urlChanged();
     void upEnabledChanged();
+    void navigationChanged();
     void openUrlFailed(const QString &text, const QString &explanation);
 
 public Q_SLOTS:
     void scan(const QString &u);
 
     void slotUp();
+    bool slotBack();
+    bool slotForward();
     void slotScanFolder();
     void slotScanHomeFolder();
     void slotScanRootFolder();
@@ -65,9 +73,12 @@ private:
     /// For internal use only -- call openUrl() instead
     void setUrl(const QUrl &url);
     void setUpEnabled(const bool enabled);
+    QUrl parentUrl() const;
+    bool openUrlImpl(const QUrl &url, bool remember);
 
     QUrl m_url;
-    bool m_upEnabled;
+    bool m_upEnabled = false;
+    NavigationHistory m_history;
     ScanManager *m_manager;
 
     explicit MainContext(QObject *parent = nullptr);

@@ -40,6 +40,51 @@ private Q_SLOTS:
         QCOMPARE(back.count(), 2);
     }
 
+    void keyboardForward()
+    {
+        QWindow window;
+        NavigationInput input;
+        input.setWindow(&window);
+        input.setProperty("enabled", true);
+        QSignalSpy forward(&input, &NavigationInput::forwardRequested);
+        QSignalSpy back(&input, &NavigationInput::backRequested);
+        QKeyEvent shortcut(QEvent::ShortcutOverride, Qt::Key_Right, Qt::AltModifier);
+        shortcut.ignore();
+        QCoreApplication::sendEvent(&window, &shortcut);
+        QVERIFY(shortcut.isAccepted());
+        QCOMPARE(forward.count(), 0);
+        QKeyEvent press(QEvent::KeyPress, Qt::Key_Right, Qt::AltModifier);
+        QCoreApplication::sendEvent(&window, &press);
+        QCOMPARE(forward.count(), 1);
+        QKeyEvent repeat(QEvent::KeyPress, Qt::Key_Right, Qt::AltModifier, QString(), true, 2);
+        QCoreApplication::sendEvent(&window, &repeat);
+        QKeyEvent release(QEvent::KeyRelease, Qt::Key_Right, Qt::AltModifier);
+        QCoreApplication::sendEvent(&window, &release);
+        QCOMPARE(forward.count(), 1);
+        QKeyEvent native(QEvent::KeyPress, Qt::Key_Forward, Qt::NoModifier);
+        QCoreApplication::sendEvent(&window, &native);
+        QCOMPARE(forward.count(), 2);
+        QCOMPARE(back.count(), 0);
+    }
+
+    void nativeMouseForward()
+    {
+        QWindow window;
+        NavigationInput input;
+        input.setWindow(&window);
+        input.setProperty("enabled", true);
+        QSignalSpy forward(&input, &NavigationInput::forwardRequested);
+        QSignalSpy back(&input, &NavigationInput::backRequested);
+        const QPointF position(10, 10);
+        QMouseEvent press(QEvent::MouseButtonPress, position, position, Qt::ForwardButton, Qt::ForwardButton, Qt::NoModifier);
+        QCoreApplication::sendEvent(&window, &press);
+        QCOMPARE(forward.count(), 0);
+        QMouseEvent release(QEvent::MouseButtonRelease, position, position, Qt::ForwardButton, Qt::NoButton, Qt::NoModifier);
+        QCoreApplication::sendEvent(&window, &release);
+        QCOMPARE(forward.count(), 1);
+        QCOMPARE(back.count(), 0);
+    }
+
     void nativeMouseBack()
     {
         QWindow window;
@@ -66,6 +111,10 @@ private Q_SLOTS:
         NavigationInput input;
         input.setWindow(&window);
         QSignalSpy back(&input, &NavigationInput::backRequested);
+        QSignalSpy forward(&input, &NavigationInput::forwardRequested);
+        QKeyEvent forwardKey(QEvent::KeyPress, Qt::Key_Forward, Qt::NoModifier);
+        QCoreApplication::sendEvent(&window, &forwardKey);
+        QCOMPARE(forward.count(), 0);
         QKeyEvent key(QEvent::KeyPress, Qt::Key_Back, Qt::NoModifier);
         QCoreApplication::sendEvent(&window, &key);
         QCOMPARE(back.count(), 0);

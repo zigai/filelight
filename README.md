@@ -1,8 +1,8 @@
 # Filelight
 
 This personal fork adds [sidebar multi-selection](MULTI_SELECTION.md), a
-[compact resizable sidebar and parent-folder Back](SIDEBAR_LAYOUT.md), and
-plain-text clipboard paths while preserving file-manager copying.
+[compact resizable sidebar](SIDEBAR_LAYOUT.md), [Back/Forward folder history](NAVIGATION_HISTORY.md),
+and plain-text clipboard paths while preserving file-manager copying.
 See [the clipboard fix and build instructions](CLIPBOARD_FIX.md).
 
 Filelight allows you to understand exactly where your diskspace is being used by
@@ -13,7 +13,8 @@ segmented-rings.
 
 - Click on chart directories, or double-click sidebar folders, to center the view there
 - Drag the sidebar divider to resize it; the width is remembered
-- Mouse Back / Alt+Left goes up one folder, like Alt+Up
+- Mouse Back/Forward or Alt+Left/Right retrace folder visits; Alt+Up always goes to the parent
+- Back on an initially opened folder falls back to Up, and Forward can return to it
 - Click on files to launch the application associated with them
 - Middle click to open files/directories with your file browser
 - Increase the window size to see more detail

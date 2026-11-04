@@ -66,13 +66,34 @@ Kirigami.Page {
         shortcut: "Alt+Up"
     }
 
+    Kirigami.Action {
+        id: goBackAction
+        enabled: page.state === "" && MainContext.backEnabled
+        icon.name: "go-previous"
+        text: i18nc("@action", "Back")
+        displayHint: Kirigami.DisplayHint.AlwaysHide
+        onTriggered: MainContext.slotBack()
+    }
+
+    Kirigami.Action {
+        id: goForwardAction
+        enabled: page.state === "" && MainContext.forwardEnabled
+        icon.name: "go-next"
+        text: i18nc("@action", "Forward")
+        displayHint: Kirigami.DisplayHint.AlwaysHide
+        onTriggered: MainContext.slotForward()
+    }
+
     NavigationInput {
         window: appWindow
         enabled: appWindow.pageStack.currentIndex > 0
                  && appWindow.pageStack.currentItem === page
                  && appWindow.pageStack.layers.depth <= 1
         onBackRequested: {
-            if (page.enabled && goUpAction.enabled) goUpAction.trigger();
+            if (page.enabled && goBackAction.enabled) goBackAction.trigger();
+        }
+        onForwardRequested: {
+            if (page.enabled && goForwardAction.enabled) goForwardAction.trigger();
         }
     }
 
@@ -115,6 +136,8 @@ Kirigami.Page {
 
     actions: [
         goUpAction,
+        goBackAction,
+        goForwardAction,
         goToOverviewAction,
         rescanAction,
         stopAction,

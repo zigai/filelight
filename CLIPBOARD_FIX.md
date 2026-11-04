@@ -42,8 +42,8 @@ package.
 
 ## Verification
 
-- All eight CTest suites pass, including clipboard, [sidebar selection](MULTI_SELECTION.md),
-  and [layout/navigation](SIDEBAR_LAYOUT.md) coverage.
+- All nine CTest suites pass, including clipboard, [sidebar selection](MULTI_SELECTION.md),
+  [layout/input](SIDEBAR_LAYOUT.md), and [folder history](NAVIGATION_HISTORY.md) coverage.
 - The new regression test fails on all four data rows when the plain-text
   addition is temporarily removed, and passes when restored.
 - Installed binary tested in an isolated KWin Wayland session: right-click

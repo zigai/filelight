@@ -8,7 +8,7 @@
 #include <QWindow>
 #include <qqmlintegration.h>
 
-// Handle navigation before Kirigami's generic page-stack Back shortcut.
+// Handle folder navigation before Kirigami's generic page-stack shortcuts.
 class NavigationInput : public QObject
 {
     Q_OBJECT
@@ -24,6 +24,7 @@ public:
 Q_SIGNALS:
     void windowChanged();
     void backRequested();
+    void forwardRequested();
 
 protected:
     bool eventFilter(QObject *watched, QEvent *event) override;

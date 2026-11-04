@@ -21,6 +21,8 @@ add_library(filelightInternal STATIC
     fileCleaner.cpp
     scan.cpp
     Config.cpp
+    navigationHistory.cpp
+    navigationHistory.h
     localLister.cpp
     remoteLister.cpp
     fileTree.h

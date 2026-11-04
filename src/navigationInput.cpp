@@ -38,13 +38,19 @@ bool NavigationInput::eventFilter(QObject *watched, QEvent *event)
     case QEvent::KeyPress:
     case QEvent::KeyRelease: {
         const auto *key = static_cast<QKeyEvent *>(event);
-        if (key->key() != Qt::Key_Back && !key->matches(QKeySequence::Back)) {
+        const bool back = key->key() == Qt::Key_Back || key->matches(QKeySequence::Back);
+        const bool forward = key->key() == Qt::Key_Forward || key->matches(QKeySequence::Forward);
+        if (!back && !forward) {
             return false;
         }
-        // Claim ShortcutOverride so the framework's Back shortcut never runs.
+        // Claim both shortcuts, even when there is no history in that direction.
         event->accept();
         if (event->type() == QEvent::KeyPress && !key->isAutoRepeat()) {
-            Q_EMIT backRequested();
+            if (back) {
+                Q_EMIT backRequested();
+            } else {
+                Q_EMIT forwardRequested();
+            }
         }
         return true;
     }
@@ -52,13 +58,17 @@ bool NavigationInput::eventFilter(QObject *watched, QEvent *event)
     case QEvent::MouseButtonRelease:
     case QEvent::MouseButtonDblClick: {
         const auto *mouse = static_cast<QMouseEvent *>(event);
-        if (mouse->button() != Qt::BackButton) {
+        if (mouse->button() != Qt::BackButton && mouse->button() != Qt::ForwardButton) {
             return false;
         }
         event->accept();
         // One action per click, never on both press and release.
         if (event->type() == QEvent::MouseButtonRelease) {
-            Q_EMIT backRequested();
+            if (mouse->button() == Qt::BackButton) {
+                Q_EMIT backRequested();
+            } else {
+                Q_EMIT forwardRequested();
+            }
         }
         return true;
     }

@@ -52,3 +52,15 @@ ecm_add_test(navigationInputTest.cpp ../src/navigationInput.cpp ../src/navigatio
     TEST_NAME navigationInputTest
     LINK_LIBRARIES Qt::Test Qt::Quick
 )
+
+ecm_add_test(
+    navigationHistoryTest.cpp
+    ../src/mainContext.cpp ../src/mainContext.h
+    ../src/contextMenuContext.cpp ../src/contextMenuContext.h
+    ../src/fileModel.cpp ../src/fileModel.h
+    ../src/radialMap/map.cpp ../src/radialMap/map.h
+    ../src/radialMap/radialMap.cpp ../src/radialMap/radialMap.h
+    TEST_NAME navigationHistoryTest
+    LINK_LIBRARIES Qt::Test Qt::Quick KF6::ColorScheme filelightInternal
+)
+target_include_directories(navigationHistoryTest PRIVATE ../src/radialMap)
