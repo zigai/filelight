@@ -169,6 +169,13 @@ Kirigami.Page {
                 onTriggered: Qt.openUrlExternally(contextMenu.segment.url())
             }
             QQC2.MenuItem {
+                action: Kirigami.Action {
+                    icon.name: "edit-copy"
+                    text: i18nc("@action", "Copy Filepath")
+                    onTriggered: contextMenuContext.copyClipboard(contextMenu.segment.url())
+                }
+            }
+            QQC2.MenuItem {
                 visible: contextMenu.segment.isFolder() && contextMenu.segment.url().toString().startsWith("file:")
                 action: Kirigami.Action {
                     icon.name: "utilities-terminal"
@@ -201,13 +208,6 @@ Kirigami.Page {
                     icon.name: "view-refresh"
                     text: i18nc("@action rescan filelight map", "Rescan")
                     onTriggered: MainContext.rescanSingleDir(contextMenu.segment.url())
-                }
-            }
-            QQC2.MenuItem {
-                action: Kirigami.Action {
-                    icon.name: "edit-copy"
-                    text: i18nc("@action", "Copy to clipboard")
-                    onTriggered: contextMenuContext.copyClipboard(contextMenu.segment.url())
                 }
             }
             QQC2.MenuSeparator {}
@@ -259,6 +259,11 @@ Kirigami.Page {
             }
         }
         QQC2.MenuItem {
+            icon.name: "edit-copy"
+            text: i18ncp("@action copy selected file or folder paths", "Copy Filepath", "Copy Filepaths", sidebarMenu.urls.length)
+            onTriggered: contextMenuContext.copyUrls(sidebarMenu.urls)
+        }
+        QQC2.MenuItem {
             visible: sidebarMenu.singleFolder && sidebarMenu.urls.length === 1
                      && sidebarMenu.urls[0].toString().startsWith("file:")
             icon.name: "utilities-terminal"
@@ -270,11 +275,6 @@ Kirigami.Page {
             icon.name: "list-remove"
             text: i18nc("@action", "Add to Do Not Scan List")
             onTriggered: contextMenuContext.doNotScan(sidebarMenu.urls[0])
-        }
-        QQC2.MenuItem {
-            icon.name: "edit-copy"
-            text: i18nc("@action", "Copy to clipboard")
-            onTriggered: contextMenuContext.copyUrls(sidebarMenu.urls)
         }
         QQC2.MenuSeparator {}
         QQC2.MenuItem {
