@@ -1,8 +1,31 @@
 # Filelight
 
-A fork of [KDE Filelight](https://github.com/KDE/filelight), a graphical disk-usage analyzer.
+Filelight allows you to understand exactly where your diskspace is being used by
+graphically representating your filesystem as a set of concentric
+segmented-rings.
 
-## What's different
+# Useful Tips
+
+- Click on directories to center the view there
+- Click on files to launch the application associated with them
+- Middle click to open files/directories with your file browser
+- Increase the window size to see more detail
+- Hover over segments to find out more information
+- You can specify a directory to scan on startup from the command line like this: `filelight /home/me/foobar`
+
+# Bug Reporting
+
+There are less bugs everyday! Please report bugs at https://bugs.kde.org/
+
+# Enjoy!
+
+We hope you enjoy using Filelight!
+
+Martin Sandsmark <martin.sandsmark@kde.org>
+
+Max Howell <max.howell@methylblue.com>
+
+## Fork changes
 
 - **Clipboard:** copies plain-text paths as well as file references for pasting into file managers.
 - **Multi-selection:** Ctrl/Shift-click to select folders and files, then copy or delete the selection. Deletion is still permanent, with confirmation.
