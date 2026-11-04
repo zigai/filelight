@@ -2,10 +2,8 @@
 // SPDX-FileCopyrightText: 2022 Harald Sitter <sitter@kde.org>
 
 import QtQuick
-import QtQuick.Layouts
 import QtQuick.Controls as QQC2
 import org.kde.kirigami as Kirigami
-import org.kde.kirigami.delegates as KD
 import org.kde.coreaddons as KCoreAddons
 import QtQuick.Shapes
 
@@ -66,6 +64,16 @@ Kirigami.Page {
         text: i18nc("@action", "Up")
         onTriggered: appWindow.slotUp()
         shortcut: "Alt+Up"
+    }
+
+    NavigationInput {
+        window: appWindow
+        enabled: appWindow.pageStack.currentIndex > 0
+                 && appWindow.pageStack.currentItem === page
+                 && appWindow.pageStack.layers.depth <= 1
+        onBackRequested: {
+            if (page.enabled && goUpAction.enabled) goUpAction.trigger();
+        }
     }
 
     Kirigami.Action {
@@ -253,17 +261,25 @@ Kirigami.Page {
         }
     }
 
-    RowLayout {
+    SidebarSplitView {
+        id: mapSplitView
+        objectName: "mapSplitView"
         anchors.fill: parent
-        spacing: 0
         visible: page.state === ""
 
+        onResizingChanged: {
+            if (!resizing && foldersSidebar.visible) {
+                Config.foldersSidebarWidth = Math.round(foldersSidebar.width);
+                Config.write();
+            }
+        }
+
         QQC2.ScrollView {
+            id: foldersSidebar
+            objectName: "foldersSidebar"
             visible: Config.showFoldersSidebar
-            implicitWidth: Kirigami.Units.gridUnit * 10
-            Layout.maximumWidth: Kirigami.Units.gridUnit * 22
-            Layout.fillWidth: true
-            Layout.fillHeight: true
+            QQC2.SplitView.minimumWidth: Kirigami.Units.gridUnit * 8
+            QQC2.SplitView.preferredWidth: Config.foldersSidebarWidth
             Kirigami.Theme.colorSet: Kirigami.Theme.View
             Kirigami.Theme.inherit: false
 
@@ -275,6 +291,7 @@ Kirigami.Page {
 
             ListView {
                 id: listview
+                objectName: "folderList"
                 clip: true
                 model: visible ? FileModel : undefined
                 currentIndex: sidebarSelection.current
@@ -330,11 +347,10 @@ Kirigami.Page {
                     }
                 }
 
-                delegate: KD.SubtitleDelegate {
+                delegate: SidebarFileDelegate {
                     id: sidebarDelegate
                     width: listview.width
                     icon.name: ROLE_IsFolder ? "folder" : "file" // TODO mimetype?
-                    icon.width: Kirigami.Units.iconSizes.huge
                     text: model.display
                     subtitle: ROLE_HumanReadableSize
                     hoverEnabled: !page.contextMenu
@@ -391,167 +407,166 @@ Kirigami.Page {
             }
         }
 
-        Kirigami.Separator {
-            visible: Config.showFoldersSidebar
-            Layout.fillHeight: true
-        }
-
         Item {
-            id: shapeItem
-            Layout.fillWidth: true
-            Layout.fillHeight: true
-            Layout.minimumHeight: Kirigami.Units.gridUnit * 10
-            Layout.minimumWidth: Kirigami.Units.gridUnit * 10
-            Layout.margins: Kirigami.Units.gridUnit
-            antialiasing: true
-            layer.enabled: true
-            layer.samples: 8
-            layer.smooth: true
+            id: chartPane
+            QQC2.SplitView.fillWidth: true
+            QQC2.SplitView.minimumWidth: Kirigami.Units.gridUnit * 10
 
-            property var zOrderedShapes: []
-            property bool hasShapes: zOrderedShapes.length > 0
+            Item {
+                id: shapeItem
+                objectName: "mapCanvas"
+                anchors.fill: parent
+                anchors.margins: Kirigami.Units.gridUnit
+                antialiasing: true
+                layer.enabled: true
+                layer.samples: 8
+                layer.smooth: true
 
-            function objectToArray(object) {
-                let newArray = [];
-                for (let i in object) {
-                    newArray.push(object[i]);
-                }
-                return newArray;
-            }
+                property var zOrderedShapes: []
+                property bool hasShapes: zOrderedShapes.length > 0
 
-            onChildrenChanged: {
-                let children = objectToArray(shapeItem.children)
-                children = children.filter(child => child instanceof Shape);
-                children.sort((a, b) => b.z - a.z); // sort by level so the higher level object (the visible one) outscores ones it paints over
-                zOrderedShapes = children
-            }
-
-            function tooltip({ path, size, isFolder, files, totalFiles, isRoot = false }) {
-                let tips = [path, size]
-                if (isFolder) {
-                    const percent = Math.floor((100 * files) / totalFiles)
-                    if (percent > 0) {
-                        tips.push(i18ncp("Tooltip of folder, %1 is number of files", "%1 File (%2%)", "%1 Files (%2%)", files, percent))
-                    } else {
-                        tips.push(i18ncp("Tooltip of folder, %1 is number of files", "%1 File", "%1 Files", files))
+                function objectToArray(object) {
+                    let newArray = [];
+                    for (let i in object) {
+                        newArray.push(object[i]);
                     }
+                    return newArray;
                 }
-                if (isRoot) {
-                    tips.push(i18nc("part of tooltip indicating that the item under the mouse is clickable", "Click to go up to parent directory"))
-                }
-                return tips.join("\n")
-            }
 
-            Instantiator {
-                id: instantiator
-                model: shapeItem.visible ? RadialMap.signature : undefined
-                active: true
-                asynchronous: true // arguable
+                onChildrenChanged: {
+                    let children = objectToArray(shapeItem.children)
+                    children = children.filter(child => child instanceof Shape);
+                    children.sort((a, b) => b.z - a.z); // sort by level so the higher level object (the visible one) outscores ones it paints over
+                    zOrderedShapes = children
+                }
+
+                function tooltip({ path, size, isFolder, files, totalFiles, isRoot = false }) {
+                    let tips = [path, size]
+                    if (isFolder) {
+                        const percent = Math.floor((100 * files) / totalFiles)
+                        if (percent > 0) {
+                            tips.push(i18ncp("Tooltip of folder, %1 is number of files", "%1 File (%2%)", "%1 Files (%2%)", files, percent))
+                        } else {
+                            tips.push(i18ncp("Tooltip of folder, %1 is number of files", "%1 File", "%1 Files", files))
+                        }
+                    }
+                    if (isRoot) {
+                        tips.push(i18nc("part of tooltip indicating that the item under the mouse is clickable", "Click to go up to parent directory"))
+                    }
+                    return tips.join("\n")
+                }
 
                 Instantiator {
-                    // FIXME weird
-                    Component.onCompleted: idx = index // lock index by breaking the binding
-                    property int idx: index
-                    readonly property real signatureRadius: {
+                    id: instantiator
+                    model: shapeItem.visible ? RadialMap.signature : undefined
+                    active: true
+                    asynchronous: true // arguable
+
+                    Instantiator {
+                        // FIXME weird
+                        Component.onCompleted: idx = index // lock index by breaking the binding
+                        property int idx: index
+                        readonly property real signatureRadius: {
+                            if (shapeItem.width > shapeItem.height) {
+                                return shapeItem.height / 2 / (instantiator.model.length + 1)
+                            }
+                            return shapeItem.width / 2 / (instantiator.model.length + 1)
+                        }
+                        readonly property real shapeRadius: signatureRadius * (idx + 2)
+
+                        active: true
+                        model: modelData
+                        onObjectAdded: (index, object) => shapeItem.children.push(object)
+
+                        delegate: SegmentShape {
+                            // Qt doc: Note: model, index, and modelData roles are not accessible if the delegate contains required properties, unless it has also required properties with matching names.
+                            required property var modelData
+
+                            readonly property bool segmentHover: hoveredSegment === segment.uuid
+
+                            z: (instantiator.model.length - idx) // reverse order such that more central levels are above. this gives us segment appearance without having to actually paint segments (instead we stack full cicles)
+                            segment: modelData
+                            item: shapeItem
+                            radius: shapeRadius
+                            startAngle: -(modelData.start() / 16)
+                            sweepAngle: -(modelData.length() / 16)
+                            tooltipText: shapeItem.tooltip({
+                                isFolder: segment.isFolder(),
+                                path: segment.displayPath(),
+                                size: segment.humanReadableSize(),
+                                files: segment.files(),
+                                totalFiles: RadialMap.numberOfChildren,
+                            })
+                            showTooltip: !contextMenu && !hoveringListItem && segmentHover && shapeItem.visible
+                            fillColor: segmentHover ? Qt.darker(segment.color) : segment.color
+                        }
+                    }
+                }
+
+                CenterShape {
+                    id: centerShape
+                    z: 500 // on top of everything, arbitrary high number of shapes
+                    visible: shapeItem.hasShapes
+                    segment: RadialMap.rootSegment
+                    segmentUuid: "root"
+                    item: shapeItem
+                    radius: {
+                        if (instantiator.model === undefined) {
+                            return 0
+                        }
                         if (shapeItem.width > shapeItem.height) {
                             return shapeItem.height / 2 / (instantiator.model.length + 1)
                         }
                         return shapeItem.width / 2 / (instantiator.model.length + 1)
                     }
-                    readonly property real shapeRadius: signatureRadius * (idx + 2)
-
-                    active: true
-                    model: modelData
-                    onObjectAdded: (index, object) => shapeItem.children.push(object)
-
-                    delegate: SegmentShape {
-                        // Qt doc: Note: model, index, and modelData roles are not accessible if the delegate contains required properties, unless it has also required properties with matching names.
-                        required property var modelData
-
-                        readonly property bool segmentHover: hoveredSegment === segment.uuid
-
-                        z: (instantiator.model.length - idx) // reverse order such that more central levels are above. this gives us segment appearance without having to actually paint segments (instead we stack full cicles)
-                        segment: modelData
-                        item: shapeItem
-                        radius: shapeRadius
-                        startAngle: -(modelData.start() / 16)
-                        sweepAngle: -(modelData.length() / 16)
-                        tooltipText: shapeItem.tooltip({
-                            isFolder: segment.isFolder(),
-                            path: segment.displayPath(),
-                            size: segment.humanReadableSize(),
-                            files: segment.files(),
-                            totalFiles: RadialMap.numberOfChildren,
-                        })
-                        showTooltip: !contextMenu && !hoveringListItem && segmentHover && shapeItem.visible
-                        fillColor: segmentHover ? Qt.darker(segment.color) : segment.color
-                    }
+                    startAngle: 0
+                    sweepAngle: 360
+                    tooltipText: shapeItem.tooltip({
+                        isFolder: true,
+                        path: RadialMap.displayPath,
+                        size: RadialMap.overallSize,
+                        files: RadialMap.numberOfChildren,
+                        totalFiles: RadialMap.numberOfChildren,
+                        isRoot: true,
+                    })
+                    showTooltip: !contextMenu && !hoveringListItem && hoveredSegment === segmentUuid && shapeItem.visible
+                    Kirigami.Theme.colorSet: Kirigami.Theme.View
+                    fillColor: Kirigami.Theme.backgroundColor
                 }
-            }
 
-            CenterShape {
-                id: centerShape
-                z: 500 // on top of everything, arbitrary high number of shapes
-                visible: shapeItem.hasShapes
-                segment: RadialMap.rootSegment
-                segmentUuid: "root"
-                item: shapeItem
-                radius: {
-                    if (instantiator.model === undefined) {
-                        return 0
-                    }
-                    if (shapeItem.width > shapeItem.height) {
-                        return shapeItem.height / 2 / (instantiator.model.length + 1)
-                    }
-                    return shapeItem.width / 2 / (instantiator.model.length + 1)
+                QQC2.Label {
+                    id: centerLabel
+                    z: 501
+                    visible: centerShape.visible
+                    text: RadialMap.overallSize
+                    Kirigami.Theme.colorSet: Kirigami.Theme.View
+                    color: Kirigami.Theme.textColor
+                    horizontalAlignment: Text.AlignHCenter
+                    verticalAlignment: Text.AlignVCenter
+                    // The diagonal of the circle is the hypotenuse of the largest square
+                    readonly property real dimension: (2  * centerShape.radius) / Math.sqrt(2)
+                    width: dimension
+                    height: dimension
+                    anchors.centerIn: parent
+
+                    // Let the text scale way down but lock the maximum at the actual default font height.
+                    // This ensures that the text neatly fits into our dimensions.
+                    fontSizeMode: Text.Fit
+                    minimumPixelSize: 2
+                    Component.onCompleted: font.pixelSize = font.pixelSize
                 }
-                startAngle: 0
-                sweepAngle: 360
-                tooltipText: shapeItem.tooltip({
-                    isFolder: true,
-                    path: RadialMap.displayPath,
-                    size: RadialMap.overallSize,
-                    files: RadialMap.numberOfChildren,
-                    totalFiles: RadialMap.numberOfChildren,
-                    isRoot: true,
-                })
-                showTooltip: !contextMenu && !hoveringListItem && hoveredSegment === segmentUuid && shapeItem.visible
-                Kirigami.Theme.colorSet: Kirigami.Theme.View
-                fillColor: Kirigami.Theme.backgroundColor
-            }
 
-            QQC2.Label {
-                id: centerLabel
-                z: 501
-                visible: centerShape.visible
-                text: RadialMap.overallSize
-                Kirigami.Theme.colorSet: Kirigami.Theme.View
-                color: Kirigami.Theme.textColor
-                horizontalAlignment: Text.AlignHCenter
-                verticalAlignment: Text.AlignVCenter
-                // The diagonal of the circle is the hypotenuse of the largest square
-                readonly property real dimension: (2  * centerShape.radius) / Math.sqrt(2)
-                width: dimension
-                height: dimension
-                anchors.centerIn: parent
-
-                // Let the text scale way down but lock the maximum at the actual default font height.
-                // This ensures that the text neatly fits into our dimensions.
-                fontSizeMode: Text.Fit
-                minimumPixelSize: 2
-                Component.onCompleted: font.pixelSize = font.pixelSize
-            }
-
-            Kirigami.PlaceholderMessage {
-                id: openUrlWarning
-                visible: !centerShape.visible
-                anchors.centerIn: parent
-                width: parent.width - (Kirigami.Units.largeSpacing * 4)
-                Connections {
-                    target: MainContext
-                    function onOpenUrlFailed(text, explanation) {
-                        openUrlWarning.text = text;
-                        openUrlWarning.explanation = explanation;
+                Kirigami.PlaceholderMessage {
+                    id: openUrlWarning
+                    visible: !centerShape.visible
+                    anchors.centerIn: parent
+                    width: parent.width - (Kirigami.Units.largeSpacing * 4)
+                    Connections {
+                        target: MainContext
+                        function onOpenUrlFailed(text, explanation) {
+                            openUrlWarning.text = text;
+                            openUrlWarning.explanation = explanation;
+                        }
                     }
                 }
             }
@@ -559,11 +574,9 @@ Kirigami.Page {
     }
 
     MouseArea {
-        x: shapeItem.x
-        y: shapeItem.y
+        parent: shapeItem
+        anchors.fill: parent
         z: 502
-        width: shapeItem.width
-        height: shapeItem.height
         hoverEnabled: !page.contextMenu
         acceptedButtons: Qt.LeftButton | Qt.RightButton
 
@@ -635,11 +648,9 @@ Kirigami.Page {
     }
 
     DropperItem {
-        x: shapeItem.x
-        y: shapeItem.y
+        parent: shapeItem
+        anchors.fill: parent
         z: 503
-        width: shapeItem.width
-        height: shapeItem.height
         onUrlsDropped: urls => {
             const url = urls[0]
             appWindow.updateURL(url)

@@ -1,6 +1,7 @@
 # Filelight
 
-This personal fork adds [sidebar multi-selection](MULTI_SELECTION.md) and
+This personal fork adds [sidebar multi-selection](MULTI_SELECTION.md), a
+[compact resizable sidebar and parent-folder Back](SIDEBAR_LAYOUT.md), and
 plain-text clipboard paths while preserving file-manager copying.
 See [the clipboard fix and build instructions](CLIPBOARD_FIX.md).
 
@@ -10,7 +11,9 @@ segmented-rings.
 
 # Useful Tips
 
-- Click on directories to center the view there
+- Click on chart directories, or double-click sidebar folders, to center the view there
+- Drag the sidebar divider to resize it; the width is remembered
+- Mouse Back / Alt+Left goes up one folder, like Alt+Up
 - Click on files to launch the application associated with them
 - Middle click to open files/directories with your file browser
 - Increase the window size to see more detail

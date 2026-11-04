@@ -25,6 +25,12 @@ SPDX-License-Identifier: BSD-2-Clause
       <label>Show folders sidebar</label>
       <default>true</default>
     </entry>
+    <entry name="foldersSidebarWidth" type="Int">
+      <label>Folders sidebar width</label>
+      <default>320</default>
+      <min>144</min>
+      <max>8192</max>
+    </entry>
     <entry name="contrast" type="Int">
       <label>Contrast</label>
       <default>75</default>

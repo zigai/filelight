@@ -47,3 +47,8 @@ ecm_add_test(sidebarSelectionTest.cpp
     LINK_LIBRARIES Qt::QuickTest
 )
 target_compile_definitions(sidebarSelectionTest PRIVATE QUICK_TEST_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/qml")
+
+ecm_add_test(navigationInputTest.cpp ../src/navigationInput.cpp ../src/navigationInput.h
+    TEST_NAME navigationInputTest
+    LINK_LIBRARIES Qt::Test Qt::Quick
+)

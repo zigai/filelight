@@ -28,6 +28,7 @@ void Config::read()
     scanRemoteMounts = config.scanRemoteMounts();
     showSmallFiles = config.showSmallFiles();
     showFoldersSidebar = config.showFoldersSidebar();
+    foldersSidebarWidth = config.foldersSidebarWidth();
     contrast = config.contrast();
     scheme = (Filelight::MapScheme)config.scheme();
     skipList = config.skipList();
@@ -43,6 +44,7 @@ void Config::write() const
     config.setScanRemoteMounts(scanRemoteMounts);
     config.setShowSmallFiles(showSmallFiles);
     config.setShowFoldersSidebar(showFoldersSidebar);
+    config.setFoldersSidebarWidth(foldersSidebarWidth);
     config.setContrast(contrast);
     config.setScheme((int)scheme); // TODO: make the enum belong to a qwidget,
     // and use magic macros to make it save this properly

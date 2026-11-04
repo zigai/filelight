@@ -83,6 +83,7 @@ target_sources(filelight PRIVATE
     dropperItem.h
     hicolor.qrc
     windowThemer.cpp windowThemer.h
+    navigationInput.cpp navigationInput.h
 )
 target_include_directories(filelight PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/radialMap)
 
